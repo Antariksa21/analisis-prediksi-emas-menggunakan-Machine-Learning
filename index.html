@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Gold - Prediksi Harga Emas & Kalkulator ROI</title>
+    <!-- Font & Icons Premium -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    
+    <style>
+        /* CSS RESET & VARIABLES */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-color: #080A10;
+            --sidebar-bg: #0F121C;
+            --card-bg: rgba(22, 28, 41, 0.45);
+            --card-border: rgba(212, 175, 55, 0.15);
+            --card-border-hover: rgba(212, 175, 55, 0.38);
+            --text-color: #F7FAFC;
+            --text-muted: #A0AEC0;
+            --gold: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #FFE082 0%, #D4AF37 50%, #B38F24 100%);
+            --green: #48BB78;
+            --green-bg: rgba(72, 187, 120, 0.12);
+            --red: #F56565;
+            --red-bg: rgba(245, 101, 101, 0.12);
+            --blue: #3182CE;
+            --purple: #9F7AEA;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* HEADER & CONTAINER */
+        header {
+            padding: 20px 4%;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: rgba(15, 18, 28, 0.6);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+        
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo i {
+            color: var(--gold);
+            font-size: 2rem;
+            filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.4));
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .status-badge {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-badge.online i { color: var(--green); }
+        .status-badge.offline i { color: var(--red); }
+        
+        .main-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 30px 4%;
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 3fr 1.25fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* CARD COMPONENT */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            margin-bottom: 24px;
+        }
+        
+        .glass-card:hover {
+            border-color: var(--card-border-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* LEFT SECTION - METRICS, SIGNALS & CHARTS */
+        .dashboard-main {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .metric-value {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-delta {
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+        
+        .metric-delta.positive {
+            background-color: var(--green-bg);
+            color: var(--green);
+        }
+        
+        .metric-delta.negative {
+            background-color: var(--red-bg);
+            color: var(--red);
+        }
+        
+        .metric-delta.neutral {
+            background-color: rgba(160, 174, 192, 0.15);
+            color: var(--text-muted);
+        }
+        
+        .metric-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* DIRECTIVE SIGNAL BOX */
+        .signal-box {
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .signal-title {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #FFFFFF;
+            font-weight: 500;
+        }
+        
+        .signal-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            margin: 12px 0;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+        }
+        
+        .signal-desc {
+            font-size: 1rem;
+            font-weight: 300;
+            color: var(--text-color);
+        }
+        
+        .signal-box.buy {
+            background-color: var(--green-bg);
+            border-color: var(--green);
+        }
+        
+        .signal-box.sell {
+            background-color: var(--red-bg);
+            border-color: var(--red);
+        }
+        
+        .signal-box.hold {
+            background-color: rgba(176, 190, 197, 0.12);
+            border-color: var(--text-muted);
+        }
+
+        /* CHART & CONTROLS */
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 0;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .timeframe-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .timeframe-btn:hover {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .timeframe-btn.active {
+            background: var(--gold-gradient);
+            color: #0E1117;
+            border-color: transparent;
+            font-weight: 700;
+        }
+
+        #plotly-chart {
+            width: 100%;
+            min-height: 400px;
+        }
+
+        /* RIGHT SECTION - ROI CALCULATOR & STATS */
+        .dashboard-sidebar {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 10px;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .input-field {
+            width: 100%;
+            background: rgba(20, 24, 33, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 14px;
+            border-radius: 8px;
+            color: #FFFFFF;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        }
+        
+        /* Select dropdown styling */
+        select.input-field {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23D4AF37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        
+        select.input-field option {
+            background-color: var(--sidebar-bg);
+            color: #FFFFFF;
+        }
+
+        /* ROI RESULTS CARD */
+        .roi-results {
+            background: rgba(20, 24, 33, 0.8);
+            border-left: 4px solid var(--gold);
+            padding: 18px;
+            border-radius: 0 12px 12px 0;
+            margin-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.03);
+            border-right: 1px solid rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: border-color 0.3s ease;
+        }
+        
+        .roi-results.profit { border-left-color: var(--green); }
+        .roi-results.loss { border-left-color: var(--red); }
+        
+        .roi-res-item {
+            margin-bottom: 12px;
+        }
+        
+        .roi-res-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .roi-res-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        
+        .roi-res-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+        
+        .roi-res-value.profit-text { color: var(--green); }
+        .roi-res-value.loss-text { color: var(--red); }
+        
+        .disclaimer-box {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            margin-top: 15px;
+        }
+
+        /* APP GUIDE CARD */
+        .guide-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        
+        .guide-list li {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--text-muted);
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        
+        .guide-list li i {
+            color: var(--gold);
+            font-size: 0.9rem;
+            margin-top: 3px;
+        }
+        
+        .guide-list li strong {
+            color: #FFFFFF;
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 24px 4%;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: rgba(15, 18, 28, 0.4);
+            margin-top: 40px;
+        }
+
+        /* LOADING SHIELD OVERLAY */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .spinner-coin {
+            font-size: 4rem;
+            color: var(--gold);
+            animation: spin 2s linear infinite, glow 2s ease-in-out infinite alternate;
+        }
+        
+        .loading-text {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #FFFFFF;
+            letter-spacing: 1px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        
+        @keyframes glow {
+            0% { filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3)); }
+            100% { filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.8)); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div class="loading-overlay" id="loading-screen">
+        <i class="fa-solid fa-coins spinner-coin"></i>
+        <div class="loading-text">Menyelaraskan Bursa & Melatih Model ML...</div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <i class="fa-solid fa-coins"></i>
+                <h1>AURA GOLD</h1>
+            </div>
+            <div class="status-badge" id="api-status">
+                <i class="fa-solid fa-circle"></i>
+                <span id="status-text">Menghubungkan...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        
+        <!-- Left Side: Dashboard & Prediction -->
+        <section class="dashboard-main">
+            
+            <!-- Metrics Row -->
+            <div class="metrics-grid">
+                
+                <!-- Metric 1: Current Price -->
+                <div class="glass-card">
+                    <div class="metric-label">
+                        <i class="fa-solid fa-chart-line"></i> Harga Hari Ini
+                    </div>
+                    <div class="metric-value" id="price-today">Rp 0</div>
+                    <div class="metric-delta" id="delta-today">
+                        <i class="fa-solid"></i> <span>0.00%</span>
+                    </div>
+                    <div class="metric-sub">dibandingkan hari bursa kemarin</div>
+                </div>
+                
+                <!-- Metric 2: Predicted Price -->
+                <div class="glass-card">
+                    <div class="metric-label">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Prediksi Besok
+                    </div>
+                    <div class="metric-value" id="price-predicted">Rp 0</div>
+                    <div class="metric-delta" id="delta-predicted">
+                        <i class="fa-solid"></i> <span>0.00%</span>
+                    </div>
+                    <div class="metric-sub">estimasi harga penutupan esok hari</div>
+                </div>
+                
+                <!-- Metric 3: Model Accuracy -->
+                <div class="glass-card">
+                    <div class="metric-label">
+                        <i class="fa-solid fa-bullseye"></i> Akurasi Model (R²)
+                    </div>
+                    <div class="metric-value" id="model-r2">0.00%</div>
+                    <div class="metric-delta neutral" id="model-mape">
+                        Error: 0.00% (MAPE)
+                    </div>
+                    <div class="metric-sub">dievaluasi pada 20% data uji</div>
+                </div>
+                
+            </div>
+            
+            <!-- Signal Card -->
+            <div class="signal-box hold" id="signal-card">
+                <div class="signal-title">Sinyal Indikasi Model untuk Besok</div>
+                <div class="signal-value" id="signal-text">HOLD</div>
+                <div class="signal-desc" id="signal-desc">Memuat parameter pasar...</div>
+                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; font-style: italic;">
+                    * Catatan: Sinyal ini memprediksi arah pasar emas dunia secara global, bukan portofolio pribadi Anda.
+                </div>
+            </div>
+            
+            <!-- Plotly Line Chart -->
+            <div class="glass-card chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <i class="fa-solid fa-chart-area"></i> Grafik Pergerakan Emas & Rata-rata Bergerak
+                    </div>
+                    <div class="chart-controls">
+                        <button class="timeframe-btn" onclick="filterChart(22, this)">1 Bulan</button>
+                        <button class="timeframe-btn" onclick="filterChart(126, this)">6 Bulan</button>
+                        <button class="timeframe-btn active" onclick="filterChart(252, this)">1 Tahun</button>
+                    </div>
+                </div>
+                <div id="plotly-chart"></div>
+            </div>
+            
+        </section>
+        
+        <!-- Right Side: Sidebar & ROI Calculator -->
+        <section class="dashboard-sidebar">
+            
+            <!-- ROI Card -->
+            <div class="glass-card">
+                <div class="sidebar-title">
+                    <i class="fa-solid fa-calculator"></i> Kalkulator ROI Anda
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">
+                    Masukkan harga beli Anda di masa lalu untuk menghitung profit/loss investasi pribadi Anda berdasarkan harga live saat ini.
+                </p>
+                
+                <div class="input-group">
+                    <label for="purchase-price-input">Harga Beli Awal (Rp/gram)</label>
+                    <input type="number" id="purchase-price-input" class="input-field" value="1200000" min="0" step="5000">
+                </div>
+                
+                <div class="input-group">
+                    <label for="purchase-weight-input">Berat Emas (gram)</label>
+                    <input type="number" id="purchase-weight-input" class="input-field" value="10" min="0" step="1">
+                </div>
+                
+                <div class="roi-results" id="roi-results-box">
+                    <div class="roi-res-item">
+                        <div class="roi-res-label">Total Investasi Awal</div>
+                        <div class="roi-res-value" id="roi-investment">Rp 0</div>
+                    </div>
+                    
+                    <div class="roi-res-item">
+                        <div class="roi-res-label">Nilai Emas Saat Ini</div>
+                        <div class="roi-res-value" id="roi-current-value">Rp 0</div>
+                    </div>
+                    
+                    <div class="roi-res-item">
+                        <div class="roi-res-label">Keuntungan Bersih (P/L)</div>
+                        <div class="roi-res-value" id="roi-profit">Rp 0</div>
+                    </div>
+                    
+                    <div class="roi-res-item">
+                        <div class="roi-res-label">Persentase ROI</div>
+                        <div class="roi-res-value" id="roi-percentage">0.00%</div>
+                    </div>
+                </div>
+                
+                <div class="disclaimer-box">
+                    <strong>Catatan Kurs Konversi:</strong><br>
+                    Data emas disinkronkan secara live dengan bursa global (GC=F) dan dikonversikan otomatis menggunakan kurs penutupan USD ke IDR: <span id="kurs-live">Rp 16.250</span>.
+                </div>
+            </div>
+            
+            <!-- Demo Simulation Card -->
+            <div class="glass-card">
+                <div class="sidebar-title">
+                    <i class="fa-solid fa-flask"></i> Mode Simulasi Sinyal (Demo)
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+                    Uji coba respons tampilan antarmuka web untuk kondisi bursa yang berbeda secara instan.
+                </p>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label for="demo-signal-select">Pilih Kondisi Bursa</label>
+                    <select id="demo-signal-select" class="input-field" onchange="changeDemoSignal(this.value)">
+                        <option value="">Analisis Asli Model ML</option>
+                        <option value="sell">Bursa Turun (Sinyal JUAL)</option>
+                        <option value="hold">Bursa Stabil (Sinyal HOLD)</option>
+                        <option value="buy">Bursa Naik (Sinyal BELI)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- App Guide Card -->
+            <div class="glass-card">
+                <div class="sidebar-title">
+                    <i class="fa-solid fa-circle-info"></i> Panduan Pengunjung
+                </div>
+                <ul class="guide-list">
+                    <li>
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span><strong>Harga Hari Ini:</strong> Merupakan harga emas bursa dunia (USD) dikonversi ke Rupiah per Gram hari ini secara langsung.</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-robot"></i>
+                        <span><strong>Sinyal Prediksi ML:</strong> Indikator arah tren bursa esok hari (BELI/JUAL/HOLD) berdasarkan pembelajaran mesin model Random Forest.</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-calculator"></i>
+                        <span><strong>Kalkulator ROI:</strong> Lacak kinerja portofolio Anda. Input <strong>Harga Beli</strong> & <strong>Berat</strong> Anda akan langsung merubah kalkulasi profit/loss di atasnya.</span>
+                    </li>
+                </ul>
+            </div>
+            
+        </section>
+        
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Aura Gold. Dibuat dengan FastAPI, Scikit-Learn, Plotly.js, dan HTML/CSS/JS Murni.</p>
+    </footer>
+
+    <!-- Frontend logic / JavaScript -->
+    <script>
+        // API Configuration
+        let apiUrl = '/api/predict';
+        let currentDemoSignal = '';
+        
+        // Pengecekan jika dibuka dari file lokal (protokol file://)
+        if (window.location.protocol === 'file:') {
+            apiUrl = 'http://127.0.0.1:8000/api/predict';
+        }
+
+        // Global variables to store fetched data
+        let goldData = null;
+        let activeTimeframe = 252; // Default 1 tahun
+        
+        // Helper formatter Rupiah
+        function formatRupiah(number, decimals = 0) {
+            const rounded = Math.round(number);
+            return 'Rp ' + rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        // Fetch data dari FastAPI backend
+        async function loadDashboardData(forceSignal = '') {
+            // Tampilkan kembali layar loading saat demo diganti agar interaktif
+            document.getElementById('loading-screen').classList.remove('hidden');
+            
+            try {
+                let url = apiUrl;
+                if (forceSignal) {
+                    url += `?force_signal=${forceSignal}`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                goldData = await response.json();
+                renderDashboard(goldData);
+                
+                // Update status badge
+                const statusBadge = document.getElementById('api-status');
+                const statusText = document.getElementById('status-text');
+                statusBadge.classList.add('online');
+                
+                if (goldData.is_mock) {
+                    statusText.innerText = "Simulasi Offline";
+                    statusBadge.style.borderColor = "var(--red)";
+                } else {
+                    statusText.innerText = "Online & Sinkron";
+                    statusBadge.style.borderColor = "var(--green)";
+                }
+                
+            } catch (error) {
+                console.error("Gagal memuat data API: ", error);
+                
+                // Update status badge ke offline
+                const statusBadge = document.getElementById('api-status');
+                const statusText = document.getElementById('status-text');
+                statusBadge.classList.add('offline');
+                statusText.innerText = "Koneksi Terputus";
+                statusBadge.style.borderColor = "var(--red)";
+                
+                // Alert user
+                alert("Gagal terhubung ke API Backend. Jalankan backend FastAPI lokal Anda atau deploy ke Vercel.");
+            } finally {
+                // Sembunyikan layar loading
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Update UI dengan data dari API
+        function renderDashboard(data) {
+            const todayPrice = data.today_price;
+            const yesterdayPrice = data.yesterday_price;
+            const predictedTomorrow = data.predicted_tomorrow;
+            
+            // 1. Metric Harga Hari Ini
+            document.getElementById('price-today').innerText = formatRupiah(todayPrice);
+            const dailyChange = todayPrice - yesterdayPrice;
+            const dailyPct = (dailyChange / yesterdayPrice) * 100;
+            const deltaTodayEl = document.getElementById('delta-today');
+            
+            if (dailyChange >= 0) {
+                deltaTodayEl.className = "metric-delta positive";
+                deltaTodayEl.querySelector('i').className = "fa-solid fa-arrow-trend-up";
+                deltaTodayEl.querySelector('span').innerText = `+${formatRupiah(dailyChange)} (+${dailyPct.toFixed(2)}%)`;
+            } else {
+                deltaTodayEl.className = "metric-delta negative";
+                deltaTodayEl.querySelector('i').className = "fa-solid fa-arrow-trend-down";
+                deltaTodayEl.querySelector('span').innerText = `${formatRupiah(dailyChange)} (${dailyPct.toFixed(2)}%)`;
+            }
+            
+            // 2. Metric Prediksi Besok
+            document.getElementById('price-predicted').innerText = formatRupiah(predictedTomorrow);
+            const predChange = predictedTomorrow - todayPrice;
+            const predPct = (predChange / todayPrice) * 100;
+            const deltaPredictedEl = document.getElementById('delta-predicted');
+            
+            if (predChange >= 0) {
+                deltaPredictedEl.className = "metric-delta positive";
+                deltaPredictedEl.querySelector('i').className = "fa-solid fa-arrow-trend-up";
+                deltaPredictedEl.querySelector('span').innerText = `+${formatRupiah(predChange)} (+${predPct.toFixed(2)}%)`;
+            } else {
+                deltaPredictedEl.className = "metric-delta negative";
+                deltaPredictedEl.querySelector('i').className = "fa-solid fa-arrow-trend-down";
+                deltaPredictedEl.querySelector('span').innerText = `${formatRupiah(predChange)} (${predPct.toFixed(2)}%)`;
+            }
+            
+            // 3. Metric Akurasi Model
+            document.getElementById('model-r2').innerText = `${(data.metrics.r2 * 100).toFixed(2)}%`;
+            document.getElementById('model-mape').innerText = `Error: ${data.metrics.mape.toFixed(2)}% (MAPE)`;
+            
+            // 4. Sinyal Indikasi
+            const signalCard = document.getElementById('signal-card');
+            const signalText = document.getElementById('signal-text');
+            const signalDesc = document.getElementById('signal-desc');
+            
+            if (predPct > 0.4) {
+                signalCard.className = "signal-box buy";
+                signalText.innerText = "BELI";
+                signalDesc.innerText = `Model memprediksi harga emas akan meningkat sebesar +${predPct.toFixed(2)}% besok. Peluang beli yang potensial.`;
+            } else if (predPct < -0.4) {
+                signalCard.className = "signal-box sell";
+                signalText.innerText = "JUAL";
+                signalDesc.innerText = `Model memprediksi koreksi harga emas sekitar ${predPct.toFixed(2)}% besok. Direkomendasikan untuk ambil profit.`;
+            } else {
+                signalCard.className = "signal-box hold";
+                signalText.innerText = "HOLD (TAHAN)";
+                signalDesc.innerText = `Perkiraan fluktuasi harga emas besok sangat kecil (${predPct > 0 ? '+' : ''}${predPct.toFixed(2)}%). Rekomendasi menahan portofolio.`;
+            }
+            
+            // 5. Update info kurs di Sidebar
+            document.getElementById('kurs-live').innerText = formatRupiah(data.exchange_rate, 2);
+            
+            // 6. Jalankan ROI Calculator
+            calculateROI(todayPrice);
+            
+            // 7. Render Plotly Chart
+            renderChart(data.history, activeTimeframe);
+        }
+
+        // Kalkulasi ROI real-time di Javascript
+        function calculateROI(currentPricePerGram) {
+            const purchasePriceInput = parseFloat(document.getElementById('purchase-price-input').value) || 0;
+            const purchaseWeightInput = parseFloat(document.getElementById('purchase-weight-input').value) || 0;
+            
+            const totalInvestment = purchasePriceInput * purchaseWeightInput;
+            const currentValue = currentPricePerGram * purchaseWeightInput;
+            const netProfit = currentValue - totalInvestment;
+            const roiPercentage = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
+            
+            // Update UI ROI
+            document.getElementById('roi-investment').innerText = formatRupiah(totalInvestment);
+            document.getElementById('roi-current-value').innerText = formatRupiah(currentValue);
+            
+            const roiProfitEl = document.getElementById('roi-profit');
+            const roiPctEl = document.getElementById('roi-percentage');
+            const roiBoxEl = document.getElementById('roi-results-box');
+            
+            const sign = netProfit >= 0 ? '+' : '';
+            
+            roiProfitEl.innerText = `${sign}${formatRupiah(netProfit)}`;
+            roiPctEl.innerText = `${sign}${roiPercentage.toFixed(2)}%`;
+            
+            // Update warna box ROI
+            if (netProfit > 0) {
+                roiBoxEl.className = "roi-results profit";
+                roiProfitEl.className = "roi-res-value profit-text";
+                roiPctEl.className = "roi-res-value profit-text";
+            } else if (netProfit < 0) {
+                roiBoxEl.className = "roi-results loss";
+                roiProfitEl.className = "roi-res-value loss-text";
+                roiPctEl.className = "roi-res-value loss-text";
+            } else {
+                roiBoxEl.className = "roi-results";
+                roiProfitEl.className = "roi-res-value";
+                roiPctEl.className = "roi-res-value";
+            }
+        }
+
+        // Event handler untuk pergantian simulasi demo bursa
+        function changeDemoSignal(val) {
+            currentDemoSignal = val;
+            loadDashboardData(val);
+        }
+
+        // Setup event listener untuk input ROI
+        document.getElementById('purchase-price-input').addEventListener('input', () => {
+            if (goldData) calculateROI(goldData.today_price);
+        });
+        document.getElementById('purchase-weight-input').addEventListener('input', () => {
+            if (goldData) calculateROI(goldData.today_price);
+        });
+
+        // Menggambar grafik dengan Plotly.js
+        function renderChart(history, sliceLength) {
+            const slicedHistory = history.slice(-sliceLength);
+            
+            const dates = slicedHistory.map(d => d.date);
+            const closes = slicedHistory.map(d => d.close);
+            const ma7s = slicedHistory.map(d => d.ma7);
+            const ma21s = slicedHistory.map(d => d.ma21);
+            
+            const traceClose = {
+                x: dates,
+                y: closes,
+                mode: 'lines',
+                name: 'Harga Emas (Rp/g)',
+                line: { color: '#D4AF37', width: 2.5 }
+            };
+            
+            const traceMA7 = {
+                x: dates,
+                y: ma7s,
+                mode: 'lines',
+                name: 'MA 7-Hari',
+                line: { color: '#3182CE', width: 1.5, dash: 'dash' }
+            };
+            
+            const traceMA21 = {
+                x: dates,
+                y: ma21s,
+                mode: 'lines',
+                name: 'MA 21-Hari',
+                line: { color: '#9F7AEA', width: 1.5, dash: 'dot' }
+            };
+            
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l: 70, r: 20, t: 30, b: 40 },
+                xaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255, 255, 255, 0.05)',
+                    tickcolor: 'rgba(255, 255, 255, 0.2)',
+                    tickfont: { color: '#A0AEC0', family: 'Outfit' },
+                    rangeslider: { visible: false }
+                },
+                yaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255, 255, 255, 0.05)',
+                    tickcolor: 'rgba(255, 255, 255, 0.2)',
+                    tickfont: { color: '#A0AEC0', family: 'Outfit' }
+                },
+                legend: {
+                    orientation: 'h',
+                    y: 1.1,
+                    x: 1,
+                    xanchor: 'right',
+                    font: { color: '#FFFFFF', family: 'Outfit' }
+                },
+                height: 400
+            };
+            
+            Plotly.newPlot('plotly-chart', [traceClose, traceMA7, traceMA21], layout, { responsive: true, displayModeBar: false });
+        }
+
+        // Filtering rentang waktu bursa
+        function filterChart(sliceLength, element) {
+            activeTimeframe = sliceLength;
+            
+            // Update active state class tombol
+            const buttons = document.querySelectorAll('.timeframe-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            
+            if (goldData) {
+                renderChart(goldData.history, sliceLength);
+            }
+        }
+
+        // Inisialisasi awal
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+        });
+    </script>
+</body>
+</html>
