@@ -215,9 +215,9 @@
         }
         
         .signal-value {
-            font-size: 3.5rem;
+            font-size: 2.8rem;
             font-weight: 800;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             margin: 12px 0;
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
         }
@@ -574,11 +574,11 @@
             
             <!-- Signal Card -->
             <div class="signal-box hold" id="signal-card">
-                <div class="signal-title">Sinyal Indikasi Model untuk Besok</div>
+                <div class="signal-title" id="signal-header-text">Sinyal Indikasi Model untuk Besok</div>
                 <div class="signal-value" id="signal-text">HOLD</div>
                 <div class="signal-desc" id="signal-desc">Memuat parameter pasar...</div>
                 <div style="font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; font-style: italic;">
-                    * Catatan: Sinyal ini memprediksi arah pasar emas dunia secara global, bukan portofolio pribadi Anda.
+                    * Catatan: Sinyal ini secara otomatis menyesuaikan secara cerdas ketika Anda menginput portofolio pribadi Anda di samping.
                 </div>
             </div>
             
@@ -811,36 +811,17 @@
             document.getElementById('model-r2').innerText = `${(data.metrics.r2 * 100).toFixed(2)}%`;
             document.getElementById('model-mape').innerText = `Error: ${data.metrics.mape.toFixed(2)}% (MAPE)`;
             
-            // 4. Sinyal Indikasi
-            const signalCard = document.getElementById('signal-card');
-            const signalText = document.getElementById('signal-text');
-            const signalDesc = document.getElementById('signal-desc');
-            
-            if (predPct > 0.4) {
-                signalCard.className = "signal-box buy";
-                signalText.innerText = "BELI";
-                signalDesc.innerText = `Model memprediksi harga emas akan meningkat sebesar +${predPct.toFixed(2)}% besok. Peluang beli yang potensial.`;
-            } else if (predPct < -0.4) {
-                signalCard.className = "signal-box sell";
-                signalText.innerText = "JUAL";
-                signalDesc.innerText = `Model memprediksi koreksi harga emas sekitar ${predPct.toFixed(2)}% besok. Direkomendasikan untuk ambil profit.`;
-            } else {
-                signalCard.className = "signal-box hold";
-                signalText.innerText = "HOLD (TAHAN)";
-                signalDesc.innerText = `Perkiraan fluktuasi harga emas besok sangat kecil (${predPct > 0 ? '+' : ''}${predPct.toFixed(2)}%). Rekomendasi menahan portofolio.`;
-            }
+            // 4. Jalankan Sinyal & ROI Calculator terintegrasi
+            updatePortfolioAdvice();
             
             // 5. Update info kurs di Sidebar
             document.getElementById('kurs-live').innerText = formatRupiah(data.exchange_rate, 2);
             
-            // 6. Jalankan ROI Calculator
-            calculateROI(todayPrice);
-            
-            // 7. Render Plotly Chart
+            // 6. Render Plotly Chart
             renderChart(data.history, activeTimeframe);
         }
 
-        // Kalkulasi ROI real-time di Javascript
+        // Kalkulasi ROI dasar
         function calculateROI(currentPricePerGram) {
             const purchasePriceInput = parseFloat(document.getElementById('purchase-price-input').value) || 0;
             const purchaseWeightInput = parseFloat(document.getElementById('purchase-weight-input').value) || 0;
@@ -877,6 +858,98 @@
                 roiProfitEl.className = "roi-res-value";
                 roiPctEl.className = "roi-res-value";
             }
+            
+            return { totalInvestment, currentValue, netProfit, roiPercentage };
+        }
+
+        // Fungsi menggabungkan prediksi bursa global dengan portofolio investasi pribadi user
+        function updatePortfolioAdvice() {
+            if (!goldData) return;
+            
+            const todayPrice = goldData.today_price;
+            const predictedTomorrow = goldData.predicted_tomorrow;
+            const predChange = predictedTomorrow - todayPrice;
+            const predPct = (predChange / todayPrice) * 100;
+            
+            const purchasePriceInput = parseFloat(document.getElementById('purchase-price-input').value) || 0;
+            const purchaseWeightInput = parseFloat(document.getElementById('purchase-weight-input').value) || 0;
+            
+            const signalCard = document.getElementById('signal-card');
+            const signalText = document.getElementById('signal-text');
+            const signalDesc = document.getElementById('signal-desc');
+            const signalHeader = document.getElementById('signal-header-text');
+            
+            // Jalankan ROI calculator di sidebar dulu
+            const roi = calculateROI(todayPrice);
+            
+            // LOGIKA PENASIHAT KEUANGAN INTERAKTIF
+            if (purchasePriceInput <= 0 || purchaseWeightInput <= 0) {
+                // KASUS A: Pengguna belum mengisi data portofolio. Kembalikan ke Sinyal Pasar Global murni.
+                signalHeader.innerText = "Sinyal Indikasi Model untuk Besok (Bursa Global)";
+                
+                if (predPct > 0.4) {
+                    signalCard.className = "signal-box buy";
+                    signalText.innerText = "BELI (PASAR)";
+                    signalDesc.innerText = `Model memprediksi harga emas dunia besok akan meningkat sebesar +${predPct.toFixed(2)}%. Peluang beli yang potensial untuk umum.`;
+                } else if (predPct < -0.4) {
+                    signalCard.className = "signal-box sell";
+                    signalText.innerText = "JUAL (PASAR)";
+                    signalDesc.innerText = `Model memprediksi koreksi bursa sekitar ${predPct.toFixed(2)}% besok. Hindari membeli emas di harga pucuk hari ini.`;
+                } else {
+                    signalCard.className = "signal-box hold";
+                    signalText.innerText = "HOLD (PASAR)";
+                    signalDesc.innerText = `Perkiraan perubahan bursa besok stabil (${predPct > 0 ? '+' : ''}${predPct.toFixed(2)}%). Rekomendasi menahan portofolio.`;
+                }
+                return;
+            }
+            
+            // KASUS B: Pengguna telah mengisi data portofolio emas mereka
+            signalHeader.innerText = "Rekomendasi Portofolio Anda (Asisten Investasi AI)";
+            
+            const profitPct = roi.roiPercentage;
+            
+            if (profitPct >= 8.0) {
+                // 1. Pengguna untung besar (>= 8%)
+                if (predPct < -0.4) {
+                    // Pasar besok diprediksi turun, saatnya ambil profit!
+                    signalCard.className = "signal-box sell";
+                    signalText.innerText = "JUAL (AMBIL UNTUNG)";
+                    signalDesc.innerText = `Investasi Anda untung besar (+${profitPct.toFixed(1)}%). Karena AI mendeteksi koreksi bursa besok (${predPct.toFixed(2)}%), ini waktu terbaik mengamankan profit Anda!`;
+                } else {
+                    // Pasar naik/stabil, biarkan keuntungan berjalan
+                    signalCard.className = "signal-box buy";
+                    signalText.innerText = "TAHAN (BIARKAN PROFIT BERJALAN)";
+                    signalDesc.innerText = `Investasi Anda untung besar (+${profitPct.toFixed(1)}%). AI memprediksi bursa besok stabil/naik. Tahan emas Anda untuk memaksimalkan hasil!`;
+                }
+            } else if (profitPct <= -5.0) {
+                // 2. Pengguna merugi cukup dalam (<= -5%)
+                if (predPct > 0.4) {
+                    // Harga jatuh, tapi besok diprediksi naik. Waktu terbaik average down (beli murah).
+                    signalCard.className = "signal-box buy";
+                    signalText.innerText = "BELI LAGI (AVERAGE DOWN)";
+                    signalDesc.innerText = `Posisi portofolio Anda minus (${profitPct.toFixed(1)}%). Namun, bursa besok diprediksi naik (+${predPct.toFixed(2)}%). Waktu terbaik beli lagi di harga diskon untuk menurunkan rata-rata modal!`;
+                } else {
+                    // Pasar juga diprediksi flat/turun. Jangan panic sell.
+                    signalCard.className = "signal-box hold";
+                    signalText.innerText = "HOLD (TAHAN JANGAN PANIC SELL)";
+                    signalDesc.innerText = `Posisi portofolio Anda minus (${profitPct.toFixed(1)}%). Hindari melakukan cut loss. AI mendeteksi harga besok stabil/turun. Tahan untuk jangka panjang.`;
+                }
+            } else {
+                // 3. Pengguna untung/rugi tipis (-5% s.d 8%)
+                if (predPct > 0.4) {
+                    signalCard.className = "signal-box buy";
+                    signalText.innerText = "BELI / TAMBAH POSISI";
+                    signalDesc.innerText = `Kondisi investasi Anda netral. AI memprediksi bursa besok mengalami kenaikan (+${predPct.toFixed(2)}%). Peluang bagus untuk menambah aset.`;
+                } else if (predPct < -0.4) {
+                    signalCard.className = "signal-box hold";
+                    signalText.innerText = "TAHAN (HOLD PORTFOLIO)";
+                    signalDesc.innerText = `Kondisi investasi Anda netral. Model memprediksi penurunan bursa besok (${predPct.toFixed(2)}%). Rekomendasi menahan aset saat ini.`;
+                } else {
+                    signalCard.className = "signal-box hold";
+                    signalText.innerText = "TAHAN (HOLD)";
+                    signalDesc.innerText = `Portofolio Anda netral & bursa diprediksi stabil esok hari (${predPct > 0 ? '+' : ''}${predPct.toFixed(2)}%). Tidak perlu mengambil tindakan terburu-buru.`;
+                }
+            }
         }
 
         // Event handler untuk pergantian simulasi demo bursa
@@ -887,10 +960,10 @@
 
         // Setup event listener untuk input ROI
         document.getElementById('purchase-price-input').addEventListener('input', () => {
-            if (goldData) calculateROI(goldData.today_price);
+            updatePortfolioAdvice();
         });
         document.getElementById('purchase-weight-input').addEventListener('input', () => {
-            if (goldData) calculateROI(goldData.today_price);
+            updatePortfolioAdvice();
         });
 
         // Menggambar grafik dengan Plotly.js
